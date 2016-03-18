@@ -5,23 +5,21 @@ import java.util.LinkedList;
 import org.silvercatcher.reforged.ReforgedRegistry;
 import org.silvercatcher.reforged.api.ReforgedAdditions;
 import org.silvercatcher.reforged.items.CompoundTags;
+import org.silvercatcher.reforged.items.weapons.ItemBoomerang;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.InventoryCrafting;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 
-public class NestOfBeesLoadRecipe implements IRecipe {
+public class BoomerangEnchRecipe implements IRecipe {
 	
 	private ItemStack output;
 	private ItemStack input [];
-	private int aBSlot;
-	private int stasize;
-	private int c;
 	
 	private static void printInventory(String name, InventoryCrafting inventory) {
 	
@@ -41,27 +39,23 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 	public boolean matches(InventoryCrafting inventory, World world) {
 		
 		//printInventory("match", inventory);
-				
-		int nestsOfBees = 0;
-		int arrowBundles = 0;
+		
+		int boomerangs = 0;
+		int gold = 0;
+		int diamonds = 0;
 		
 		for(int i = 0; i < inventory.getSizeInventory(); i++) {
 			
 			ItemStack stack = inventory.getStackInSlot(i);
 			
 			if(stack != null) {
-				if(stack.getItem() == ReforgedAdditions.NEST_OF_BEES) {
-					if(stack.getTagCompound().getInteger(CompoundTags.AMMUNITION) + 1 > 32) {
-						return false;
-					} else {
-						nestsOfBees++;
-						output = stack.copy();
-					}
-				} else if(stack.getItem() == ReforgedAdditions.ARROW_BUNDLE) {
-					arrowBundles = stack.stackSize;
-					if(arrowBundles > 4) {
-						arrowBundles = 4;
-					}
+				if(stack.getItem() instanceof ItemBoomerang) {
+					boomerangs++;
+					output = stack.copy();
+				} else if(stack.getItem() == Items.gold_ingot) {
+					gold++;
+				} else if(stack.getItem() == Items.diamond) {
+					diamonds++;
 				} else {
 					// we don't want any other stuff!
 					return false;
@@ -69,7 +63,7 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 			}
 		}
 		
-		return nestsOfBees == 1 && arrowBundles > 0;
+		return boomerangs == 1 && gold == 4 && diamonds == 4;
 	}
 	
 	@Override
@@ -79,8 +73,8 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 		
 		int size = inventory.getSizeInventory();
 		
-		// remember where to get arrow bundles....better idea?
-		LinkedList<Integer> arrowBundleIndizes = new LinkedList<Integer>();
+		LinkedList<Integer> goldSlots = new LinkedList<Integer>();
+		LinkedList<Integer> ironSlots = new LinkedList<Integer>();
 		
 		input = new ItemStack[size];
 		
@@ -89,11 +83,13 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 			ItemStack stack = inventory.getStackInSlot(i);
 			
 			if(stack != null) {
-				Item item = stack.getItem();
-				if(item == ReforgedAdditions.NEST_OF_BEES) {
+				if(stack.getItem() instanceof ItemBoomerang) {
 					output = stack.copy();
-				} else if(item == ReforgedAdditions.ARROW_BUNDLE) {
-					arrowBundleIndizes.add(i);
+				} else if(stack.getItem() == Items.gold_ingot) {
+					goldSlots.add(i);
+					input[i] = stack.copy();
+				} else if(stack.getItem() == Items.iron_ingot) {
+					ironSlots.add(i);
 					input[i] = stack.copy();
 				}
 			}
@@ -101,23 +97,8 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 		
 		NBTTagCompound compound = CompoundTags.giveCompound(output);
 		
-		int arrows = compound.getInteger(CompoundTags.AMMUNITION);
-		
-		// please terminate, please terminate,...
-		while(!arrowBundleIndizes.isEmpty()) {
-			
-			int arrowBundleSlot = arrowBundleIndizes.removeFirst();
-			aBSlot = arrowBundleSlot;
-			ItemStack arrowBundleStack = inventory.getStackInSlot(arrowBundleSlot);
-			int stsize = arrowBundleStack.stackSize;
-			if(stsize > 4) stsize = 4;
-			arrows += stsize * 8;
-			if(arrows > 32) arrows = 32;
-			stasize = stsize;
-		}
-		
-		compound.setInteger(CompoundTags.AMMUNITION, arrows);
-		c = 0;
+		output.addEnchantment(ReforgedAdditions.goalseeker, 1);
+		compound.setInteger(CompoundTags.ENCHANTED, 1);
 		return output;
 	}
 	
@@ -136,7 +117,6 @@ public class NestOfBeesLoadRecipe implements IRecipe {
 	public ItemStack[] getRemainingItems(InventoryCrafting inventory) {
 		
 		//printInventory("remain", inventory);
-		if(c++ == 0) inventory.decrStackSize(aBSlot, stasize - 1);
 		return ForgeHooks.defaultRecipeGetRemainingItems(inventory);
 	}
 }

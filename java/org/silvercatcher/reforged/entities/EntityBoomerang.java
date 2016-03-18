@@ -1,6 +1,8 @@
 package org.silvercatcher.reforged.entities;
 
+import org.silvercatcher.reforged.items.CompoundTags;
 import org.silvercatcher.reforged.items.weapons.ItemBoomerang;
+import org.silvercatcher.reforged.material.MaterialDefinition;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -75,15 +77,21 @@ public class EntityBoomerang extends AReforgedThrowable {
 		return dataWatcher.getWatchableObjectFloat(8);
 	}
 	
-	public ToolMaterial getMaterial() {
+	public MaterialDefinition getMaterialDefinition() {
 
-		return ((ItemBoomerang) getItemStack().getItem()).getMaterial();
+		return ((ItemBoomerang) getItemStack().getItem()).getMaterialDefinition();
 	}
 	
 	@Override
 	public void onUpdate() {
 		
 		super.onUpdate();
+		
+		if(getThrower() != null) {
+			if(CompoundTags.giveCompound(getItemStack()).getInteger(CompoundTags.ENCHANTED) == 1) {
+				setCoords(getThrower().posX, getThrower().posY + getThrower().getEyeHeight(), getThrower().posZ);
+			}
+		}
 		
 		double dx = this.posX - getPosX();
 		double dy = this.posY - getPosY();
@@ -99,10 +107,10 @@ public class EntityBoomerang extends AReforgedThrowable {
 		motionZ -= 0.05D * dz;
 		
 		//After 103 ticks, the Boomerang drops exactly where the thrower stood
-		if(ticksExisted >= 103 || isInWater()) {
+		if((CompoundTags.giveCompound(getItemStack()).getInteger(CompoundTags.ENCHANTED) != 1 && ticksExisted >= 103) || isInWater()) {
 			if(!worldObj.isRemote) {
-				if(getItemStack().getMaxDamage() - getItemStack().getItemDamage() > 0) {
-					entityDropItem(getItemStack(), 0.5f);
+				if(getItemStack().getMaxDamage() - getItemStack().getItemDamage() > 0 && !creativeUse()) {
+						entityDropItem(getItemStack(), 0.5f);
 				} else {
 					//Custom sound later... [BREAK SOUND]
 				}
@@ -119,12 +127,8 @@ public class EntityBoomerang extends AReforgedThrowable {
 	@Override
 	protected boolean onBlockHit(BlockPos blockPos) {
 		
-		double px = getPosX();
-		double py = getPosY();
-		double pz = getPosZ();
-		
 		if(!worldObj.isRemote) {
-			if(getItemStack().getMaxDamage() - getItemStack().getItemDamage() > 0) {
+			if(getItemStack().getMaxDamage() - getItemStack().getItemDamage() > 0 && !creativeUse()) {
 				entityDropItem(getItemStack(), 0.5f);
 			}
 		}
@@ -137,8 +141,9 @@ public class EntityBoomerang extends AReforgedThrowable {
 			//It's the thrower himself
 			ItemStack stack = getItemStack();
 			EntityPlayer p = (EntityPlayer) hitEntity;
-			if(stack.getMaxDamage() - stack.getItemDamage() > 0) {
+			if(stack.getMaxDamage() - stack.getItemDamage() > 0 && !creativeUse()) {
 				p.inventory.addItemStackToInventory(stack);
+				worldObj.playSoundAtEntity(this, "random.pop", 0.5F, 0.7F);
 			} else {
 				//Custom sound later... [BREAK SOUND]
 			}
@@ -147,7 +152,7 @@ public class EntityBoomerang extends AReforgedThrowable {
 			//It's an hit entity
 			hitEntity.attackEntityFrom(causeImpactDamage(hitEntity, getThrower()), getImpactDamage(hitEntity));
 			ItemStack stack = getItemStack();
-			if(stack.attemptDamageItem(1, rand)) {
+			if(stack.getItem().isDamageable() && stack.attemptDamageItem(1, rand)) {
 				//Custom sound later... [BREAK SOUND]
 				return true;
 			} else {
@@ -181,6 +186,6 @@ public class EntityBoomerang extends AReforgedThrowable {
 
 	@Override
 	protected float getImpactDamage(Entity target) {
-		return getMaterial().getDamageVsEntity() + 5;
+		return getMaterialDefinition().getDamageVsEntity() + 5;
 	}
 }

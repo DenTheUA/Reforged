@@ -2,6 +2,7 @@ package org.silvercatcher.reforged.entities;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityThrowable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -26,7 +27,6 @@ public abstract class AReforgedThrowable extends EntityThrowable {
 		super(worldIn, throwerIn);
 		this.damageName = damageName;
 	}
-
 
 	@Override
 	protected void entityInit() {
@@ -102,4 +102,19 @@ public abstract class AReforgedThrowable extends EntityThrowable {
 		
 		super.readEntityFromNBT(tagCompund);
 	}
+	
+	/**@return True, if the thrower is a player in Creative Mode.
+	 * False, if the player is in Survival Mode or the thrower is an Entity*/
+	public boolean creativeUse() {
+		return (getThrower() instanceof EntityPlayer && ((EntityPlayer) getThrower()).capabilities.isCreativeMode)
+			   || !(getThrower() instanceof EntityPlayer);
+	}
+	
+	/**@return True, if the given Entity is a player in Creative Mode.
+	 * False, if the player is in Survival Mode or the entity is a normal Entity*/
+	public boolean creativeUse(Entity e) {
+		return (e instanceof EntityPlayer && ((EntityPlayer) e).capabilities.isCreativeMode)
+			   || !(e instanceof EntityPlayer);
+	}
+	
 }
